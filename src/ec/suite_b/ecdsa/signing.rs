@@ -24,7 +24,7 @@ use crate::{
     },
     error,
     io::der,
-    limb, pkcs8, rand, sealed, signature,
+    limb, pkcs8, rand, sealed, signature, agreement::EphemeralPrivateKey,
 };
 /// An ECDSA signing algorithm.
 pub struct EcdsaSigningAlgorithm {
@@ -141,6 +141,20 @@ impl EcdsaKeyPair {
         let key_pair = ec::suite_b::key_pair_from_bytes(
             alg.curve,
             untrusted::Input::from(private_key),
+            untrusted::Input::from(public_key),
+            cpu::features(),
+        )?;
+        Self::new(alg, key_pair, rng)
+    }
+
+    pub fn from_agreement_key(
+        alg: &'static EcdsaSigningAlgorithm,
+        ephemeral_privatekey : &EphemeralPrivateKey,
+        public_key: &[u8]
+    ) -> Result<Self, error::KeyRejected> {
+        let key_pair = ec::suite_b::key_pair_from_bytes(
+            alg.curve,
+            untrusted::Input::from(ephemeral_privatekey.prvkey()),
             untrusted::Input::from(public_key),
             cpu::features(),
         )?;
